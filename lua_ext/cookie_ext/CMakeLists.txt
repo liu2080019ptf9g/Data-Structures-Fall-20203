@@ -1,0 +1,4 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+PROJECT (LIBCOOKIE)
+
+INSTALL(FILES cookie.lua DESTINATION /usr/local/openresty/lualib/resty)

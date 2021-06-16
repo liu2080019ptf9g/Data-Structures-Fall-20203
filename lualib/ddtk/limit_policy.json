@@ -1,0 +1,31 @@
+{
+    "version" : 1472000000,
+    "enable_limit" : true,
+    "personal_key" : "offline",
+    "personal_qps" : 8,
+    "entire_qps"   : 50,
+    "entire_bucket": 200,
+    "secret_key"      : "abcdefgsalt",
+    "root_secret_key" : "123456789",
+    "max_access_interval_secs" : 3600,
+    "cookie_domain" : ".topdomain.com",
+    "cookie_path" : "/",
+    "deny_url"  : "http://192.168.1.110/deny",
+    "login_url" : "http://192.168.1.116/login",
+    "access_token_key_name" : "some_biz_token",
+    "remote_user_type" : 0,
+    "filters_top_logic_op" : "and",
+    "filters" : [
+        "read_params",
+        "single_qps",
+        "ip_black_list",
+        [
+            ["entire_qps", "reset_access_token"],
+            ["check_root_token", "check_access_token", "reset_access_token"]
+        ]
+    ],
+    "enable_split" : true,
+    "spliters" : [
+        "simple"
+    ]
+}
