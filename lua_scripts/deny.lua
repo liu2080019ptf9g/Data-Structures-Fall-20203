@@ -1,32 +1,52 @@
 -- Deny tip page
 -- Written by Kevin.XU
--- 2016/8/18
-
-
-local resty_cookie = require "resty.cookie"
+-- 2016/9/13
 
 
 -- read http request
 ngx.req.read_body()
 
-local headers = ngx.req.get_headers()
-local cookie, err = resty_cookie:new()
-if not cookie then
-    ngx.log(ngx.ERR, err)
-    return
-end
+local limit_policy = require "ddtk.limit_policy"
 
-ngx.say("headers : ")
-for key, value in pairs(headers) do
-    ngx.say(key.."="..value)
-end
+local page = [[
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+	<title></title>
+</head>
+<body>
+	<style type="text/css">
+	*{margin: 0;padding: 0;}
+	body,.page_hurry{background:#fafafa;width:100%;}
+	.page_hurry .page_hurry_inner{width:960px;margin:0 auto;height:740px;position:relative;background:#fafafa url(images/error_404.jpg) 213px 134px no-repeat;}
+	.page_hurry .page_logo{position: absolute;top: 20px;left: 0px;}
+	.page_hurry .page_logo img{display: block;border:0;}
+	.page_hurry .back_index{display: block;width: 150px;height: 57px;background:#fafafa url(images/btn_bg.png) 0 0 no-repeat;position: absolute;left: 245px;top: 493px;}
+	.page_hurry .page_num{font-family: Arial;font-size: 16px;font-weight: bold;position: absolute;top: 564px;right: 585px;color: #777;}
+	</style>
+	<div class="page_hurry" limit_deny_url="limit_deny_url_replace_place">
+		<div class="page_hurry_inner">
+			<a href="http://www.dangdang.com" class="page_logo"><img src="/resources/images/404Logo.jpg" alt="" /></a>
+			<a href="http://www.dangdang.com" class="back_index"></a>
+		</div>
+	</div>
+</body>
+</html>
+]]
 
-local cookies = cookie:get_all()
-if cookies ~= nil then 
-    ngx.say("cookies : ")
-    for key, value in pairs(cookies) do
-        ngx.say(key.."="..value)
-    end
-end
+-- if limit_policy ~= nil then
+    -- ngx.say("limit_policy is not nil")
+-- end
+
+local deny_url = limit_policy.get_deny_url()
+
+-- if deny_url ~= nil then
+    -- ngx.say(deny_url)
+-- end
+
+page = string.gsub(page, "limit_deny_url_replace_place", deny_url)
+
+ngx.say(page)
 
 
