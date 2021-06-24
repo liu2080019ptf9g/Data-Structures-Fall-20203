@@ -1,4 +1,4 @@
--- Toolkit
+-- Request Limitation Module For Dangdang.com
 -- Written by Kevin.XU
 -- 2016/7/19
 
@@ -8,6 +8,8 @@ local math = require "math"
 local resty_md5 = require "resty.md5"
 local resty_string = require "resty.string"
 local resty_uuid = require "resty.uuid"
+local timetk = require "ddtk.timetk"
+local resty_cjson = require "cjson"
 
 local ngx_shared = ngx.shared
 local ngx_now = ngx.now
@@ -24,13 +26,43 @@ local _M = {
     _VERSION = '0.1'
 }
 
+
+-- Got and parse json string from shared memory
+-- The cause is to improve performance with reducing the cpu rate
+-- written by Kevin @ 2016.12.22
+function _M.requre_parsed_shared_obj(ngx,last_micro_secs,max_refresh_micro_secs,dict_name,key_name,current_obj)
+    local now_micro_secs = timetk.get_now_micro_secs()
+    if current_obj ~= nil and (now_micro_secs-last_micro_secs<max_refresh_micro_secs) then
+        return current_obj,nil
+    end
+    local dict = ngx.shared[dict_name]
+    if dict == nil then
+        return nil,nil
+    end
+	local content = dict:get(key_name)
+	if content == nil then
+		return nil,nil
+	end
+	local obj = resty_cjson.decode(content)
+	if obj == nil then
+		return nil,nil
+	end
+    return obj,now_micro_secs
+end
+
+
 -- Extract IP from Nginx object
 function _M.extract_ip(ngx)
     local my_ip = ngx.req.get_headers()["x_forwarded_for"]
     if my_ip == nil then
-        my_ip = ngx.var.remote_addr
+        return ngx.var.remote_addr
+    else
+        if type(my_ip) == "table" then
+            return my_ip[1]
+        else
+            return my_ip
+        end
     end
-    return my_ip
 end
 
 
@@ -199,9 +231,9 @@ end
 
 
 local default_algorithm_plan = {
-    ip   = 8,
-    time = 10, 
     uuid = 32,
+    time = 10, 
+    ip   = 8
 }
 
 function _M.get_default_algorithm_plan()
@@ -283,6 +315,10 @@ function _M.generate_access_token(user_term_ip,secret_key,algorithm_plan)
     -- ip : 8 byte for ipv4
     local ipaddr = _M.ipaddrv4_to_bin_hex(user_term_ip)
     
+    -- ngx.log(ngx.INFO, "uuid_str = "..uuid_str)
+    -- ngx.log(ngx.INFO, "now = "..now)
+    -- ngx.log(ngx.INFO, "ipaddr = "..ipaddr)
+    
     --local source = uuid_str .. now .. ipaddr
     local source_table = {}
     source_table["uuid"] = uuid_str
@@ -309,7 +345,6 @@ function _M.check_access_token_ip(source_result,user_term_ip)
     end
     local current_term_ip = _M.ipaddrv4_to_bin_hex(user_term_ip)
     if current_term_ip ~= saved_term_ip then
-        ngx.log(ngx.ERR, "access token 's bind ip is not identical : "..saved_term_ip..", "..current_term_ip)
         return false
     end
     return true
@@ -329,7 +364,6 @@ function _M.check_access_token_time(source_result,max_access_interval_secs)
     local last_time_val = tonumber(last_time)
     local invertal_secs = now - last_time_val
     if invertal_secs > max_access_interval_secs then
-        ngx.log(ngx.ERR, "access token 's last time is too faraway : "..invertal_secs)
         return false
     end
     return true

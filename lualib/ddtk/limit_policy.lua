@@ -1,4 +1,4 @@
--- Limit policy 
+-- Request Limitation Policy Module For Dangdang.com
 -- Written by Kevin.XU
 -- 2016/7/19
 
@@ -12,13 +12,66 @@
 --
 
 local resty_cjson = require "cjson"
+local timetk = require "ddtk.timetk"
 
 local local_storage_config_file = "/usr/local/openresty/lualib/ddtk/limit_policy.json"
+local max_refresh_micro_secs = 30 * 1000 * 1000
 
 local limit_config_list = ngx.shared["limit_config_list"]
 
+--[[
+local data = {
+    --version use seconds of time, increase progressively
+    version = 1472000000,
+    --enable limit or not
+    enable_limit = true,
+    --offline|ip|token
+    personal_key = "offline",
+    --personal QPS
+    personal_qps = 8,
+    --entire QPS
+    entire_qps   = 50,
+    --entire burst size
+    entire_bucket= 200,
+    --secret key for access token
+    secret_key = "123456789",
+    --secret key for root token
+    root_secret_key = "ed2e7d8be5287ecdcc42671bed057a32",
+    --max interval for continuous access, unit is second
+    max_access_interval_secs = 10*60,
+    --write cookie using this domain value and path value
+    cookie_domain = "10.255.209.66",
+    cookie_path = "/",
+    --friend page for deny
+    deny_url = "http://10.255.209.66/deny",
+    --login url
+    login_url = "http://login.dangdang.com/signin.aspx",
+    -- access token name : shopping_token | deal_token
+    access_token_key_name = "shopping_token",
+    -- terminal type : 0 means pc , 1 means mobile
+    remote_user_type = 0,
+    -- filters defination expression
+    -- logic operation is changed alternately
+    -- For example
+    -- at top level, relation is 'and'
+    -- so, at second level, relation is 'or'
+    -- so, at third level, relation is 'and'
+    filters_top_logic_op = "and",
+    filters = {
+        "read_params",
+        "single_qps",
+        {
+            {"entire_qps", "reset_access_token"},
+            {"check_root_token", "check_access_token", "reset_access_token"},
+        }
+    }
+}
+]]
 
 local _M = {}
+
+local cached_objs = {}
+local last_micro_secs = timetk.get_now_micro_secs()
 
 --query config
 function _M.read_config()
@@ -271,11 +324,20 @@ function _M.get_filters_top_logic_op()
 end
 
 function _M.get_filters()
+    local now_micro_secs = timetk.get_now_micro_secs()
+    local filters_obj = cached_objs["filters"]
+    if filters_obj ~= nil and (now_micro_secs-last_micro_secs<max_refresh_micro_secs) then
+        ngx.log(ngx.ERR, "TRACK: filters found from cache")
+        return filters_obj
+    end
+    ngx.log(ngx.ERR, "TRACK: filters refresh into cache")
     local content = _M.read_config_item_from_dic("filters")
     if content == nil then
         return nil
     end
     local filters = resty_cjson.decode(content) 
+    cached_objs["filters"] = filters
+    last_micro_secs = now_micro_secs
     return filters
 end
 
@@ -284,11 +346,20 @@ function _M.is_enable_split()
 end
 
 function _M.get_spliters()
+    local now_micro_secs = timetk.get_now_micro_secs()
+    local spliters_obj = cached_objs["spliters"]
+    if spliters_obj ~= nil and (now_micro_secs-last_micro_secs<max_refresh_micro_secs) then
+        ngx.log(ngx.ERR, "TRACK: spliters found from cache")
+        return spliters_obj
+    end
+    ngx.log(ngx.ERR, "TRACK: spliters refresh into cache")
     local content = _M.read_config_item_from_dic("spliters")
     if content == nil then
         return nil
     end
     local spliters = resty_cjson.decode(content) 
+    cached_objs["spliters"] = spliters
+    last_micro_secs = now_micro_secs
     return spliters
 end
 

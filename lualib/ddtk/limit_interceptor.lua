@@ -4,23 +4,24 @@
 
 local limit_policy = require "ddtk.limit_policy"
 local timetk = require "ddtk.timetk"
-local resty_cjson = require "cjson"
+--local resty_cjson = require "cjson"
 local resty_cookie = require "resty.cookie"
 
 
 local _M = { _VERSION = '0.01' }
 
-local cached_modules = {}
+--local cached_modules = {}
 
 local LOG_MARK = " FLOWLIMIT "
 
 function _M.my_require(module_name)
-    local module = cached_modules[module_name]
-    if module ~= nil then
-        return module
-    end
-    cached_modules[module_name] = require(module_name)
-    return cached_modules[module_name]
+    --local module = cached_modules[module_name]
+    --if module ~= nil then
+    --    return module
+    --end
+    --cached_modules[module_name] = require(module_name)
+    --return cached_modules[module_name]
+    return require(module_name)
 end
 
 function _M.print_cost_time(begin_msecs,message)
@@ -64,7 +65,7 @@ function _M.handle_next_level(level, element, op, ngx, limit_policy, context_par
         return result, comment
     else
         -- execute list
-        ngx.log(ngx.DEBUG, string.rep("->",level).." - filter list is "..resty_cjson.encode(element)..", op is "..op )
+        --ngx.log(ngx.DEBUG, string.rep("->",level).." - filter list is "..resty_cjson.encode(element)..", op is "..op )
         local ele_count = #element
         for i=1, ele_count do
             local ele = element[i]

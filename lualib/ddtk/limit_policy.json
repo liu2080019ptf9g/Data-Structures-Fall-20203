@@ -20,9 +20,10 @@
         "single_qps",
         "ip_black_list",
         [
-            ["entire_qps", "reset_access_token"],
-            ["check_root_token", "check_access_token", "reset_access_token"]
-        ]
+            "entire_qps",
+            ["check_root_token", "check_access_token"]
+        ],
+        "reset_access_token"
     ],
     "enable_split" : true,
     "spliters" : [
