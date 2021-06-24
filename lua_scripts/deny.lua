@@ -2,6 +2,10 @@
 -- Written by Kevin.XU
 -- 2016/9/13
 
+-- location = /deny.html {
+      -- default_type text/html;
+      -- content_by_lua_file /usr/local/openresty/lua_scripts/deny.lua;
+-- }
 
 -- read http request
 ngx.req.read_body()
@@ -19,16 +23,14 @@ local page = [[
 	<style type="text/css">
 	*{margin: 0;padding: 0;}
 	body,.page_hurry{background:#fafafa;width:100%;}
-	.page_hurry .page_hurry_inner{width:960px;margin:0 auto;height:740px;position:relative;background:#fafafa url(images/error_404.jpg) 213px 134px no-repeat;}
+	.page_hurry .page_hurry_inner{width:960px;margin:0 auto;height:740px;position:relative;background:#fafafa url(/resources/images/error_404.jpg) 213px 134px no-repeat;}
 	.page_hurry .page_logo{position: absolute;top: 20px;left: 0px;}
 	.page_hurry .page_logo img{display: block;border:0;}
-	.page_hurry .back_index{display: block;width: 150px;height: 57px;background:#fafafa url(images/btn_bg.png) 0 0 no-repeat;position: absolute;left: 245px;top: 493px;}
+	.page_hurry .back_index{display: block;width: 150px;height: 57px;background:#fafafa url(/resources/images/btn_bg.png) 0 0 no-repeat;position: absolute;left: 245px;top: 493px;}
 	.page_hurry .page_num{font-family: Arial;font-size: 16px;font-weight: bold;position: absolute;top: 564px;right: 585px;color: #777;}
 	</style>
 	<div class="page_hurry" limit_deny_url="limit_deny_url_replace_place">
 		<div class="page_hurry_inner">
-			<a href="http://www.dangdang.com" class="page_logo"><img src="/resources/images/404Logo.jpg" alt="" /></a>
-			<a href="http://www.dangdang.com" class="back_index"></a>
 		</div>
 	</div>
 </body>
